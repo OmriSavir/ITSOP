@@ -1,0 +1,14 @@
+# Data and outputs — never commit these
+data/
+outputs/
+*.pkl
+*.csv
+
+# Python
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS files
+.DS_Store
+Thumbs.db
