@@ -54,7 +54,8 @@ def parse_args():
         "--features-dir",
         default=None,
         help="Directory containing the catch22/tsfresh feature-extraction "
-        "pickle files. Defaults to --data-dir.",
+        "pickle files produced by feature_extraction/. Defaults to "
+        "--output-dir.",
     )
     parser.add_argument(
         "--output-dir",
@@ -579,7 +580,7 @@ def train_select_and_evaluate(
 def build_dataset_configs(data_dir=None, output_dir=None, features_dir=None):
     data_dir = data_dir or os.path.join("data", DATASET)
     output_dir = output_dir or os.path.join("outputs", DATASET)
-    features_dir = features_dir or data_dir
+    features_dir = features_dir or output_dir
 
     return {
         "electricity": {

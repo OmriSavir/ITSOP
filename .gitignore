@@ -1,8 +1,22 @@
-# Data and outputs — never commit these
-data/
+# Generated pipeline outputs (matrices, features, summaries) — reproducible, never commit
 outputs/
+
+# Generated / intermediate pickle artifacts anywhere in the repo (e.g. covid19_dataset.pkl)
 *.pkl
+
+# Raw input data lives under data/, but only the source datasets below are tracked in git
+# (electricity's consumption_dataset.pkl and catch22 file stay external / untracked)
+data/*
+!data/covid19
+data/covid19/*
+!data/covid19/raw
+!data/snp500
+data/snp500/*
+
+# Track the raw COVID-19 JHU CSSE CSVs and the S&P 500 CSV; any other CSV stays ignored
 *.csv
+!data/covid19/raw/*.csv
+!data/snp500/snp500_data.csv
 
 # Python
 __pycache__/
