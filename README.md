@@ -66,21 +66,21 @@ Command-line flags (`--data-dir`, `--output-dir`, etc.) only control *where* fil
 
 `analysis/statistical_significance.py` runs a Friedman omnibus test followed by pairwise Wilcoxon signed-rank tests with Holm correction on the repeated sMAPE results (10 repetitions × 5 sampling budgets — 0.2/0.5/1.0/2.0/5.0·B0) of two ITSOP methods, MLP (one-hot) and the M-estimator, across all three datasets. It does not include `mlp_features`.
 
-Unlike every other analysis script in this repository, it does not read directly from the pipeline's `.pkl` outputs. Instead, it reads **6 plain-text log files** that must be generated manually beforehand by redirecting the stdout of `itsop/mlp_onehot.py` and `itsop/m_estimator.py` to a file, once per dataset (editing `DATASET =` between runs, exactly as for the baselines/itsop stage):
+Unlike every other analysis script in this repository, it does not read directly from the pipeline's `.pkl` outputs. Instead, it reads **6 plain-text log files** that must be generated manually beforehand by redirecting the output of `itsop/mlp_onehot.py` and `itsop/m_estimator.py` to a file, once per dataset (editing `DATASET =` between runs, exactly as for the baselines/itsop stage). Both stdout and stderr are redirected (`2>&1`) so that a crash partway through leaves a traceback in the log file instead of failing silently:
 
 ```bash
 mkdir -p logs
 
-python itsop/mlp_onehot.py > logs/covid19_mlp_vanilla_all_models.log
-python itsop/m_estimator.py > logs/covid19_m_estimator_all_models.log
+python itsop/mlp_onehot.py > logs/covid19_mlp_vanilla_all_models.log 2>&1
+python itsop/m_estimator.py > logs/covid19_m_estimator_all_models.log 2>&1
 
 # edit DATASET = "snp500" in both files, then:
-python itsop/mlp_onehot.py > logs/snp500_mlp_vanilla_all_models.log
-python itsop/m_estimator.py > logs/snp500_m_estimator_all_models.log
+python itsop/mlp_onehot.py > logs/snp500_mlp_vanilla_all_models.log 2>&1
+python itsop/m_estimator.py > logs/snp500_m_estimator_all_models.log 2>&1
 
 # edit DATASET = "electricity" in both files, then:
-python itsop/mlp_onehot.py > logs/electricity_mlp_vanilla_all_models.log
-python itsop/m_estimator.py > logs/electricity_m_estimator_all_models.log
+python itsop/mlp_onehot.py > logs/electricity_mlp_vanilla_all_models.log 2>&1
+python itsop/m_estimator.py > logs/electricity_m_estimator_all_models.log 2>&1
 ```
 
 Once all six log files exist:
@@ -100,17 +100,17 @@ electricity_mlp_vanilla_all_models.log
 electricity_m_estimator_all_models.log
 ```
 
-No wrapper script is currently provided for this step (unlike `scripts/01`–`04`) — the six runs above must be done manually.
+No wrapper script is currently provided for this step (unlike `scripts/01`–`04`) — the six runs above must be done manually. These log files are not committed to the repository (see `.gitignore`); each user regenerates them locally.
 
 ## Pipeline order
 
 ```
 grid_search/  ──┬──> test_forecasting/  ──┐
                 │                          │
-                └──> feature_extraction/ ──┼──> baselines/  ──┐
-                                            │                  │
-                                            └──> itsop/  ──────┴──> statistical_significance.py
-                                                                   (via manual log files, see above)
+                └──> feature_extraction/ ──┼──> baselines/
+                                            │
+                                            └──> itsop/  ─ ─ ─> statistical_significance.py
+                                                              (via manual log files, see above)
 
 grid_search/ (all three datasets) ─────> analysis/rank_incoherence_estimation.py
 ```
@@ -121,7 +121,7 @@ grid_search/ (all three datasets) ─────> analysis/rank_incoherence_est
 4. **Step 2b**: `feature_extraction/*` — requires step 1 for the same dataset; can run in parallel with step 2a
 5. **Step 3**: `baselines/*` and `itsop/*` — require steps 1 and 2a for the same dataset; `autoforecast.py` and `mlp_features.py` additionally require step 2b; `fforms.py` computes its own features internally
 6. **Step 4**: `analysis/rank_incoherence_estimation.py` — requires step 1 for all three datasets
-7. **Step 5**: `analysis/statistical_significance.py` — requires `itsop/mlp_onehot.py` and `itsop/m_estimator.py` (step 3) to have been run for all three datasets, with their stdout captured to the six log files described above. Independent of step 4 — neither depends on the other.
+7. **Step 5**: `analysis/statistical_significance.py` — requires only `itsop/mlp_onehot.py` and `itsop/m_estimator.py` (part of step 3) to have been run for all three datasets, with their output captured to the six log files described above. It does **not** depend on `baselines/*` or on `itsop/mlp_features.py`. Independent of step 4 — neither depends on the other.
 
 ## Running the pipeline
 
@@ -163,4 +163,4 @@ python grid_search/covid19_grid_search.py --data-dir /path/to/covid_raw --output
 - For electricity: forgetting to place the two required files in `data/electricity/` beforehand — the wrapper script catches this with an explicit error; running the individual `.py` files directly will fail with a less informative `FileNotFoundError` partway through.
 - Forgetting to update `DATASET =` before running on snp500 or electricity — the wrapper scripts in `scripts/` catch this and abort; running the individual `.py` files directly will not raise an error and will silently rerun on covid19.
 - Running `analysis/rank_incoherence_estimation.py` before all three `grid_search` scripts have completed → `FileNotFoundError` on one of the matrices.
-- Running `analysis/statistical_significance.py` before all six log files exist in `--logs-dir` → `FileNotFoundError`. Remember this step requires manually redirecting stdout from `itsop/mlp_onehot.py` and `itsop/m_estimator.py`, per dataset — it is not produced automatically by any other script.
+- Running `analysis/statistical_significance.py` before all six log files exist in `--logs-dir` → `FileNotFoundError`. Remember this step requires manually redirecting the output of `itsop/mlp_onehot.py` and `itsop/m_estimator.py`, per dataset — it is not produced automatically by any other script.

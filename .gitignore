@@ -1,6 +1,9 @@
 # Generated pipeline outputs (matrices, features, summaries) — reproducible, never commit
 outputs/
 
+# Manually-generated stdout/stderr logs consumed by analysis/statistical_significance.py
+logs/
+
 # Generated / intermediate pickle artifacts anywhere in the repo (e.g. covid19_dataset.pkl)
 *.pkl
 
